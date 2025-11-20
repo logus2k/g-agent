@@ -600,9 +600,21 @@
 							this.activeAssistantBubble = null;
 						},
 						onError: (e) => {
-							this.activeAssistantBubble = null;
-							this._addMessage("error", `Error: ${e.message}`);
-						},
+								// 1. Filter out "Run is already active" errors
+								const isCollision = e.message && (
+									e.message.includes("already active") || 
+									e.code === "RUN_ACTIVE"
+								);
+
+								if (isCollision) {
+									// console.warn("[Agent] Run collision suppressed (Global Handler)");
+									return; // Exit without showing error in chat
+								}
+
+								// 2. Show actual errors
+								this.activeAssistantBubble = null;
+								this._addMessage("error", `Error: ${e.message}`);
+							},
 						onReconnect: () => {
 							this._setStatus(true);
 						}
@@ -614,7 +626,58 @@
 					this.getThreadId = getThreadId;
 					this.setThreadId = setThreadId;
 
-					// Add TTSAudio handler to the agent client
+					// ---------------------------------------------------------
+					// NEW: Handle incoming Transcripts (STT -> Chat -> LLM)
+					// ---------------------------------------------------------
+					this.client.onTranscripts({
+						// Optional: Show what the server hears while you are still speaking
+						onInterim: ({ text }) => {
+							if (text) {
+								this.chatInput.value = text;
+							}
+						},
+						// Handle the final text when stop speaking
+						onFinal: async ({ text }) => {
+							// Trim whitespace to ensure we have actual text
+							const t = text ? text.trim() : "";
+							if (!t) return;
+
+							// 1. Interruption Logic:
+							// If the AI is currently running (activeRunId is set), cancel it immediately.
+							// This allows you to interrupt the AI by speaking.
+							if (this.client.activeRunId) {
+								console.log("[Voice] Interrupting active run...");
+								this.cancel();
+							}
+
+							// Clear input and show user message
+							this.chatInput.value = "";
+							this._addMessage("user", t);
+
+							// 2. Send to LLM with Error Suppression
+							try {
+								await this.send(t);
+							} catch (e) {
+								// Check if the error is specifically about an active run
+								// (This happens if the Cancel didn't finish fast enough on the server)
+								const isCollision = e.message && (
+									e.message.includes("already active") || 
+									e.code === "RUN_ACTIVE"
+								);
+
+								// Only show the red error bubble if it's a REAL error, not just a collision
+								if (!isCollision) {
+									this._addMessage("error", `Send failed: ${e.message}`);
+								} else {
+									// console.warn("[Voice] Run collision detected (ignored)");
+								}
+							}
+						}
+					});
+
+					// ---------------------------------------------------------
+					// Existing TTS Audio Handler
+					// ---------------------------------------------------------
 					this.client.onTTSAudio(async (payload) => {
 						console.log("[TTS] Received audio from agent server, size:", payload?.data?.byteLength || "unknown");
 						const buf = payload?.data;
@@ -634,7 +697,7 @@
 						} catch (e) {
 							console.warn("[TTS] Decode error from agent server:", e);
 						}
-					});					
+					});
 
 					this._setStatus(true);
 					this._addMessage("assistant", "Hello! I'm ready to chat. Type a message or use the microphone button to speak.");
@@ -662,7 +725,6 @@
 					console.error(e);
 				}
 			}
-
 			_setStatus(connected) {
 				if (connected) {
 					this.statusText.textContent = "Connected";
@@ -731,7 +793,7 @@
 							channelCount: 1,
 							echoCancellation: true,
 							noiseSuppression: true,
-							autoGainControl: false
+							autoGainControl: true
 						}
 					});
 
