@@ -88,7 +88,7 @@ location ^~ /agent/ {
 }
 ```
 
-Then access at: `https://logus2k.com/agent/`
+Then access at: `http://localhost:6677`
 
 ## Configuration
 
