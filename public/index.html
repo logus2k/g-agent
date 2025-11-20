@@ -453,7 +453,7 @@
 				this.llmUrl = localStorage.getItem("llm_url") || "https://logus2k.com/llm";
 				this.agentName = localStorage.getItem("agent_name") || "ml";
 				this.sttUrl = localStorage.getItem("stt_url") || "https://logus2k.com/stt";
-				this.ttsEnabled = localStorage.getItem("tts_enabled") === "true";
+				this.ttsEnabled = localStorage.getItem("tts_enabled") === null ? true : localStorage.getItem("tts_enabled") === "true";
 
 				this.client = null;
 				this.send = null;
