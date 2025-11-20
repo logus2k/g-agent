@@ -6,6 +6,12 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>g-agent</title>
 
+	<link rel="icon" href="/favicon-bold.ico" sizes="any">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-bold-32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-bold-16.png">
+	<link rel="apple-touch-icon" sizes="180x180" href="/favicon-bold-180.png">
+	<link rel="icon" type="image/png" sizes="512x512" href="/favicon-terminal-green-bold-512.png">
+
 	<style>
 		* {
 			margin: 0;
@@ -232,6 +238,7 @@
 		.btn-primary {
 			background: rgba(74, 158, 255, 0.8);
 			color: #fff;
+			height: 39px;
 		}
 
 		.btn-primary:hover:not(:disabled) {
@@ -829,6 +836,7 @@
 					this.isRecording = false;
 					this.micButton.style.opacity = "1";
 					this.micButton.style.background = "";
+					this._addMessage("info", "🎤 Recording stopped.");  // Add this line
 
 				} catch (e) {
 					console.error("Stop recording error:", e);
