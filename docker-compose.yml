@@ -1,27 +1,26 @@
-version: "3.8"
-
 services:
+
   g-agent:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    profiles:
+      - minimal
+      - default
+      - full
+    restart: unless-stopped
+    image: g-agent:1.0
     container_name: g-agent
-    ports:
-      - "6677:6677"
+    hostname: g-agent
     environment:
       NODE_ENV: production
       PORT: 6677
       HOST: 0.0.0.0
-      # Customize these for your setup:
       LLM_URL: https://logus2k.com/llm
       STT_URL: https://logus2k.com/stt
-      TTS_URL: https://logus2k.com/tts
+      TTS_URL: https://logus2k.com/tts    
+    ports:
+      - "6677:6677"
     networks:
-      - default
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6677/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 5s
+      - logus2k_network
+
+networks:
+  logus2k_network:
+    external: true
